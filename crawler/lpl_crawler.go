@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"lolcrawl/model"
 
@@ -35,7 +36,7 @@ func (crawler *LPLCrawler) Cancel() {
 func NewLPLCrawler() *LPLCrawler {
 	crawler := new(LPLCrawler)
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true),
+		chromedp.Flag("headless", false),
 		chromedp.Flag("start-fullscreen", false),
 	)
 
@@ -44,6 +45,7 @@ func NewLPLCrawler() *LPLCrawler {
 
 	crawler.Tasks = chromedp.Tasks{
 		chromedp.Navigate(url),
+		chromedp.Sleep(1 * time.Second),
 		chromedp.ActionFunc(crawlAllMatchInfo),
 	}
 
@@ -118,7 +120,9 @@ func crawlMatchUrls(ctx context.Context) ([]string, error) {
 func crawlMatchInfo(ctx context.Context, matchUrl string) (model.Match, error) {
 	var match model.Match
 	match.Team = make([]string, 2)
+	log.Println("Crawling " + matchUrl)
 	chromedp.Navigate(matchUrl).Do(ctx)
+	chromedp.Sleep(1 * time.Second).Do(ctx)
 
 	node, err := dom.GetDocument().Do(ctx)
 	if err != nil {
@@ -163,7 +167,10 @@ func crawlGameInfo(ctx context.Context, gameUrl string) (model.Game, error) {
 	var game model.Game
 	game.Team = make([]string, 2)
 	game.Players = make([]model.Player, 10)
+
 	chromedp.Navigate(gameUrl).Do(ctx)
+	chromedp.Sleep(1 * time.Second).Do(ctx)
+
 	node, err := dom.GetDocument().Do(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -189,6 +196,7 @@ func crawlGameInfo(ctx context.Context, gameUrl string) (model.Game, error) {
 
 	url := strings.Replace(gameUrl, "page-game", "page-fullstats", -1)
 	chromedp.Navigate(url).Do(ctx)
+	chromedp.Sleep(1 * time.Second).Do(ctx)
 	node, err = dom.GetDocument().Do(ctx)
 	if err != nil {
 		log.Fatal(err)
